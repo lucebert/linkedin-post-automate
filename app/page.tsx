@@ -1,16 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import ImageUploader from '@/components/ImageUploader'
 import PostGenerator from '@/components/PostGenerator'
-import { Toaster } from 'react-hot-toast'
+import LoginForm from '@/components/Auth/LoginForm'
+import { createClient } from '@/lib/supabase/client'
+import { User } from '@supabase/supabase-js'
 
 export default function Home() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPost, setGeneratedPost] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setIsLoading(false)
+    }
+
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   // Reset all states to initial values
   const handleReset = () => {
@@ -19,10 +41,34 @@ export default function Home() {
     setGeneratedPost(null)
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-gray-500">Chargement...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-8">
+        <header className="text-center">
+          <h1 className="text-3xl font-bold text-primary-700">LinkedIn Post Generator</h1>
+          <p className="text-gray-600 mt-2">Connectez-vous pour générer des posts LinkedIn</p>
+        </header>
+        
+        <div className="max-w-md mx-auto">
+          <div className="card">
+            <h2 className="text-xl font-semibold mb-6 text-center">Connexion</h2>
+            <LoginForm />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
-      <Toaster position="top-center" />
-      
       <header className="text-center">
         <h1 className="text-3xl font-bold text-primary-700">LinkedIn Post Generator</h1>
         <p className="text-gray-600 mt-2">Transformez vos captures d'écran en posts LinkedIn engageants</p>
@@ -50,6 +96,7 @@ export default function Home() {
               setIsGenerating={setIsGenerating}
               generatedPost={generatedPost}
               setGeneratedPost={setGeneratedPost}
+              userId={user.id}
             />
           ) : (
             <div className="bg-gray-50 p-8 rounded text-center text-gray-500">

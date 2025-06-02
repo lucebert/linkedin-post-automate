@@ -17,6 +17,7 @@ interface PostGeneratorProps {
   setIsGenerating: (isGenerating: boolean) => void
   generatedPost: string | null
   setGeneratedPost: (post: string | null) => void
+  userId: string
 }
 
 export default function PostGenerator({
@@ -24,7 +25,8 @@ export default function PostGenerator({
   isGenerating,
   setIsGenerating,
   generatedPost,
-  setGeneratedPost
+  setGeneratedPost,
+  userId
 }: PostGeneratorProps) {
   const [writingStyle, setWritingStyle] = useState('professional')
 
@@ -38,6 +40,7 @@ export default function PostGenerator({
     const formData = new FormData()
     formData.append('image', imageFile)
     formData.append('style', writingStyle)
+    formData.append('userId', userId)
 
     try {
       const generateToastId = toast.loading('Génération du post en cours...')
